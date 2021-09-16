@@ -14,6 +14,7 @@ function startServer() {
 
     app.use("/api/auth", authRoute);
     app.use("/api/users", userRoute);
+    app.use("/api/records", recordRoute);
 
     const port = process.env.PORT || 3000;
     app.listen(port, () => console.log(`Listening in port ${port}...`));
