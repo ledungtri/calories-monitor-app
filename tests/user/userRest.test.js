@@ -1,6 +1,11 @@
 const TestUser = require("./testUser");
 const database = require('../../db/database');
 
+let admin = {};
+let manager = {};
+let regularUser1 = {};
+let regularUser2 = {};
+
 beforeEach(async () => {
     await database.connect();
     await createTestUsers();
@@ -8,10 +13,10 @@ beforeEach(async () => {
 afterEach(database.clearDatabase);
 
 async function createTestUsers() {
-    await TestUser.register({email: 'admin@mail.com', password: 'admin123', role: 'admin'});
-    await TestUser.register({email: 'manager@mail.com', password: 'manager123', role: 'manager'});
-    await TestUser.register({email: 'regular1@mail.com', password: 'regular1123', role: 'regular'});
-    await TestUser.register({email: 'regular2@mail.com', password: 'regular2123', role: 'regular'});
+    admin = (await TestUser.register({email: 'admin@mail.com', password: 'admin123', role: 'admin'})).body.user;
+    manager = (await TestUser.register({email: 'manager@mail.com', password: 'manager123', role: 'manager'})).body.user;
+    regularUser1 = (await TestUser.register({email: 'regular1@mail.com', password: 'regular1123', role: 'regular'})).body.user;
+    regularUser2 = (await TestUser.register({email: 'regular2@mail.com', password: 'regular2123', role: 'regular'})).body.user;
 }
 
 describe("POST /auth/register", () => {
@@ -123,46 +128,33 @@ describe("GET /users/:id", () => {
 
 async function testAdminCanGetUserById() {
     const token = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.findById(user._id, token);
+    const response = await TestUser.findById(regularUser1._id, token);
     expect(response.status).toBe(200);
     expect(response.body.user.email).toEqual('regular1@mail.com');
 }
 
 async function testManagerCanGetUserById() {
     const token = (await TestUser.login("manager@mail.com", "manager123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.findById(user._id, token);
+    const response = await TestUser.findById(regularUser1._id, token);
     expect(response.status).toBe(200);
     expect(response.body.user.email).toEqual('regular1@mail.com');
 }
 
 async function testRegularUserCanGetOwnProfile() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.findById(user._id, token);
+    const response = await TestUser.findById(regularUser1._id, token);
     expect(response.status).toBe(200);
     expect(response.body.user.email).toEqual('regular1@mail.com');
 }
 
 async function testRegularUserCannotGetOtherUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular2@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.findById(user._id, token);
+    const response = await TestUser.findById(regularUser2._id, token);
     expect(response.status).toBe(401);
 }
 
 async function testUnauthorizedUserCannotGetOtherUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
-    const response = await TestUser.findById(user._id, null);
+    const response = await TestUser.findById(regularUser1._id, null);
     expect(response.status).toBe(401);
 }
 
@@ -176,52 +168,39 @@ describe("PUT /users/:id", () => {
 
 async function testAdminCanUpdateUser() {
     const token = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.update(user._id, {expectedCaloriesPerDay: 3000}, token);
+    const response = await TestUser.update(regularUser1._id, {expectedCaloriesPerDay: 3000}, token);
     expect(response.status).toBe(200);
 
-    const updated = await TestUser.findById(user._id, token);
+    const updated = await TestUser.findById(regularUser1._id, token);
     expect(updated.body.user.expectedCaloriesPerDay).toEqual(3000);
 }
 
 async function testManagerCanUpdateUser() {
     const token = (await TestUser.login("manager@mail.com", "manager123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.update(user._id, {expectedCaloriesPerDay: 3000}, token);
+    const response = await TestUser.update(regularUser1._id, {expectedCaloriesPerDay: 3000}, token);
     expect(response.status).toBe(200);
 
-    const updated = await TestUser.findById(user._id, token);
+    const updated = await TestUser.findById(regularUser1._id, token);
     expect(updated.body.user.expectedCaloriesPerDay).toEqual(3000);
 }
 
 async function testRegularUserCanUpdateOwnProfile() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.update(user._id, {expectedCaloriesPerDay: 3000}, token);
+    const response = await TestUser.update(regularUser1._id, {expectedCaloriesPerDay: 3000}, token);
     expect(response.status).toBe(200);
 
-    const updated = await TestUser.findById(user._id, token);
+    const updated = await TestUser.findById(regularUser1._id, token);
     expect(updated.body.user.expectedCaloriesPerDay).toEqual(3000);
 }
 
 async function testRegularUserCannotUpdateOtherUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular2@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.update(user._id, {expectedCaloriesPerDay: 3000}, token);
+    const response = await TestUser.update(regularUser2._id, {expectedCaloriesPerDay: 3000}, token);
     expect(response.status).toBe(401);
 }
 
 async function testUnauthorizedUserCannotUpdateUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
-    const response = await TestUser.update(user._id, {expectedCaloriesPerDay: 3000}, null);
+    const response = await TestUser.update(regularUser1._id, {expectedCaloriesPerDay: 3000}, null);
     expect(response.status).toBe(401);
 }
 
@@ -235,54 +214,41 @@ describe("DELETE /users/:id", () => {
 
 async function testAdminCanDeleteUser() {
     const token = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.remove(user._id, token);
+    const response = await TestUser.remove(regularUser1._id, token);
     expect(response.status).toBe(200);
 
-    const deleted = await TestUser.findById(user._id, token);
+    const deleted = await TestUser.findById(regularUser1._id, token);
     expect(deleted.status).toBe(404);
     expect(deleted.body.error).toEqual('User not found');
 }
 
 async function testManagerCanDeleteUser() {
     const token = (await TestUser.login("manager@mail.com", "manager123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, token)).body.users[0];
-
-    const response = await TestUser.remove(user._id, token);
+    const response = await TestUser.remove(regularUser1._id, token);
     expect(response.status).toBe(200);
 
-    const deleted = await TestUser.findById(user._id, token);
+    const deleted = await TestUser.findById(regularUser1._id, token);
     expect(deleted.status).toBe(404);
     expect(deleted.body.error).toEqual('User not found');
 }
 
 async function testRegularUserCanDeleteOwnProfile() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.remove(user._id, token);
+    const response = await TestUser.remove(regularUser1._id, token);
     expect(response.status).toBe(200);
 
-    const deleted = await TestUser.findById(user._id, token);
+    const deleted = await TestUser.findById(regularUser1._id, token);
     expect(deleted.status).toBe(404);
     expect(deleted.body.error).toEqual('User not found');
 }
 
 async function testRegularUserCannotDeleteOtherUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular2@mail.com'", null, null, adminToken)).body.users[0];
-
     const token = (await TestUser.login("regular1@mail.com", "regular1123")).body['auth-token'];
-    const response = await TestUser.remove(user._id, token);
+    const response = await TestUser.remove(regularUser2._id, token);
     expect(response.status).toBe(401);
 }
 
 async function testUnauthorizedUserCannotDeleteUser() {
-    const adminToken = (await TestUser.login("admin@mail.com", "admin123")).body['auth-token'];
-    const user = (await TestUser.find("email eq 'regular1@mail.com'", null, null, adminToken)).body.users[0];
-
-    const response = await TestUser.remove(user._id, null);
+    const response = await TestUser.remove(regularUser1._id, null);
     expect(response.status).toBe(401);
 }

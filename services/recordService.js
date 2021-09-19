@@ -1,11 +1,19 @@
 const Record = require('../models/recordModel');
+const nutritionixRequestService = require('../services/nutritionixRequestService');
 
 async function create(body, user) {
     body.userId = user._id;
 
+    if (!body.calories) {
+        body.calories = await nutritionixRequestService.getCalories(body.meal);
+    }
+
     let exceededCaloriesPerDay = false;
     if (user.expectedCaloriesPerDay) {
-        const todayCalories = Record.find({userId: user._id});
+        let todayCalories = body.calories;
+        const todayRecords = await Record.find({userId: user._id});
+        todayRecords.forEach(record => todayCalories += record.calories);
+
         if (todayCalories > user.expectedCaloriesPerDay) {
             exceededCaloriesPerDay = true;
         }
@@ -16,8 +24,8 @@ async function create(body, user) {
 
 async function find(filter, pager) {
     const total = await Record.count(filter);
-    const users = await Record.find(filter).limit(pager.size).skip(pager.offset);
-    return {users, total};
+    const records = await Record.find(filter).limit(pager.size).skip(pager.offset);
+    return {records, total};
 }
 
 async function findById(id) {

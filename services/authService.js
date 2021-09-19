@@ -26,14 +26,15 @@ async function login(req, res) {
     }
 }
 
-function verifyLoggedIn(req, res, next) {
+async function verifyLoggedIn(req, res, next) {
     const token = req.header('auth-token');
     if (!token) {
         return res.status(401).json({error: "Access Denied"});
     }
 
     try {
-        req.currentUser = jwt.verify(token, process.env.TOKEN_SECRET).currentUser;
+        const user = jwt.verify(token, process.env.TOKEN_SECRET).currentUser;
+        req.currentUser = await User.findById(user._id);
         next();
     } catch (error) {
         return res.status(401).json({error: "Access Denied"});
@@ -49,29 +50,20 @@ function verifyManagerOrAdmin(req, res, next) {
 }
 
 function verifySelfOrManagerOrAdmin(req, res, next) {
-    const isSelf = req.currentUser._id === req.params.id;
-    console.log("currentUser._id: " + req.currentUser._id);
-    console.log("req.params.id: " + req.params.id);
-    console.log("IsSelf: " + isSelf);
+    const isSelf = req.currentUser._id.toString() === req.params.id;
     if (!isSelf && req.currentUser.role !== "admin" && req.currentUser.role !== "manager") {
-        console.log("IsSelf: " + isSelf);
         return res.status(401).json({error: "Access Denied"});
     }
     next();
 }
 
 function verifyOwnerOrAdmin(req, res, next) {
-    verifyOwner(req, res);
-    if (req.currentUser.role !== "admin") {
+    const isOwner = req.currentUser._id.toString() === req.record.userId.toString();
+    const isAdmin = req.currentUser.role === "admin";
+    if (!isOwner && !isAdmin) {
         return res.status(401).json({error: "Access Denied"});
     }
     next();
-}
-
-function verifyOwner(req, res) {
-    if (req.currentUser._id !== req.record.userId) {
-        return res.status(401).json({error: "Access Denied"});
-    }
 }
 
 module.exports = { register, login, verifyLoggedIn, verifySelfOrManagerOrAdmin, verifyManagerOrAdmin, verifyOwnerOrAdmin }

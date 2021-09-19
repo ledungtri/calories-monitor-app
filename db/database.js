@@ -21,7 +21,6 @@ async function clearDatabase() {
 
     if (mongoose.connection.db) {
         await mongoose.connection.db.dropDatabase();
-        console.log("done clearing database")
     }
 }
 
