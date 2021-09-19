@@ -23,7 +23,12 @@ function create(body, authToken) {
 }
 
 function find(filter, page, size, authToken) {
-    return request(app).get('/api/users/').query(filter, page, size).set("auth-token", authToken);
+    const query = {};
+    if (filter) query.filter = filter;
+    if (page) query.page = page;
+    if (size) query.size = size;
+
+    return request(app).get('/api/users/').query(query).set("auth-token", authToken);
 }
 
 function findById(id, authToken) {

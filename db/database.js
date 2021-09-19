@@ -14,27 +14,15 @@ async function connect() {
     console.log('Connected to MongoDB.');
 }
 
-function clearDatabase(callback) {
+async function clearDatabase() {
     if (process.env.NODE_ENV !== 'test') {
         throw new Error('Attempt to clear non testing database!');
     }
 
-    const fns = [];
-
-    function createAsyncFn(index) {
-        fns.push((done) => {
-            mongoose.connection.collections[index].deleteOne(() => {
-                done();
-            });
-        });
+    if (mongoose.connection.db) {
+        await mongoose.connection.db.dropDatabase();
+        console.log("done clearing database")
     }
-
-    for (const i in mongoose.connection.collections) {
-        if (mongoose.connection.collections.hasOwnProperty(i)) {
-            createAsyncFn(i);
-        }
-    }
-
-    async.parallel(fns, () => callback());
 }
+
 module.exports = {connect, clearDatabase};

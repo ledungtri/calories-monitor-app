@@ -3,7 +3,6 @@ const User = require('../models/userModel');
 const userService = require('../services/userService');
 
 async function register(req, res) {
-    req.body.role = 'regular';
     try {
         const user = await userService.create(req.body);
         return res.status(200).json({user});
@@ -51,7 +50,11 @@ function verifyManagerOrAdmin(req, res, next) {
 
 function verifySelfOrManagerOrAdmin(req, res, next) {
     const isSelf = req.currentUser._id === req.params.id;
+    console.log("currentUser._id: " + req.currentUser._id);
+    console.log("req.params.id: " + req.params.id);
+    console.log("IsSelf: " + isSelf);
     if (!isSelf && req.currentUser.role !== "admin" && req.currentUser.role !== "manager") {
+        console.log("IsSelf: " + isSelf);
         return res.status(401).json({error: "Access Denied"});
     }
     next();

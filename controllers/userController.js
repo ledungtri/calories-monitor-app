@@ -15,15 +15,6 @@ async function load(req, res, next, id) {
     return next();
 }
 
-async function create(req, res) {
-    try {
-        const user = await userService.create(req.body);
-        return res.status(200).json({user});
-    } catch (error) {
-        return res.status(400).json({error: error.message});
-    }
-}
-
 async function find(req, res) {
     const filter = createFilter(req.query.filter);
 
@@ -50,4 +41,4 @@ async function remove(req, res) {
     return res.status(200).json({user});
 }
 
-module.exports = { load, create, findById, find, update, remove };
+module.exports = { load, findById, find, update, remove };

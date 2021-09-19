@@ -5,8 +5,7 @@ const authService = require('../services/authService');
 router.use(authService.verifyLoggedIn);
 
 router.route('/')
-    .get(authService.verifyManagerOrAdmin, userController.find)
-    .post(authService.verifyManagerOrAdmin, userController.create);
+    .get(authService.verifyManagerOrAdmin, userController.find);
 
 router.route("/:id")
     .get(authService.verifySelfOrManagerOrAdmin, userController.findById)
