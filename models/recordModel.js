@@ -12,7 +12,10 @@ const recordSchema = new mongoose.Schema({
     calories: {
         type: Number,
         required: true,
-        default: 0
+        default: 0,
+        validate: {
+            validator: validateCalories
+        }
     },
     exceededCaloriesPerDay: {
         type: Boolean,
@@ -25,5 +28,9 @@ const recordSchema = new mongoose.Schema({
         default: Date.now
     },
 });
+
+function validateCalories(value) {
+    return value > 0;
+}
 
 module.exports = mongoose.model('Record', recordSchema);
